@@ -26,24 +26,27 @@ const db = mysql.createPool({
 });
 
 
-app.post('/signup', (req, res)=> {
+app.post('/signup', (req, res) => {
     const sql = "INSERT INTO signup (`matricule`,`name`,`signupDate`,`solde`,`password`) VALUES (?)";
-   bcrypt.hash(req.body.password.toString(), salt, (err, hash) =>{
-    if(err) return res.json({ Error : "error from hashing password" });
+    
+    bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
+        if (err) return res.json({ Error: "Error hashing password" });
 
-    const values = [
-        req.body.matricule,
-        req.body.name,
-        req.body.signupDate,
-        req.body.solde,
-        hash,
-    ]
-    db.query(sql, [values], (err, res)=>{
-        if(err) return res.json({ Error : "problem inserting data from server to db" });
-        return res.json({ Status : "Success" });
-    })
-   })
-})
+        const values = [
+            req.body.matricule,
+            req.body.name,
+            req.body.signupDate,
+            req.body.solde,
+            hash,
+        ];
+
+        db.query(sql, [values], (err, result) => {
+            if (err) return res.json({ Error: "Problem inserting data into the database" });
+            return res.json({ Status: "Success" });
+        });
+    });
+});
+
 
 
 
