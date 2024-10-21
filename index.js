@@ -4,9 +4,12 @@ import mysql from "mysql";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
+
 
 const salt = 11;
 const app = express();
+app.use(bodyParser.json());
 
 app.use(express.json());
 app.use(cors({
@@ -22,6 +25,29 @@ const db = mysql.createPool({
     password: "",
     database: "conge",
 });
+
+app.post('/demande', (req, res) => {
+    const { typeConge, heureDebut, heureFin, dateDebut, dateFin, totalTimeOff } = req.body;
+  
+    // SQL query to insert into the demande table
+    const query = `
+      INSERT INTO demande (typeConge, heureDebut, heureFin, dateDebut, dateFin, totalTimeOff) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+  
+    // Execute the query, safely inserting user data
+    db.query(
+      query,
+      [typeConge, heureDebut || null, heureFin || null, dateDebut || null, dateFin || null, totalTimeOff],
+      (error, results) => {
+        if (error) {
+          console.error('Error inserting data:', error);
+          return res.status(500).send('Error inserting data');
+        }
+        res.status(200).send('Demande de congé enregistrée avec succès!');
+      }
+    );
+  });
 
 // User Signup Route
 app.post('/signup', (req, res) => {
@@ -97,17 +123,35 @@ app.get('/get-role', verifyUser(), (req, res) => {
     res.json({ Status: "Success", role: req.role , name: req.name });
 });
 
-
-// Example of using the verifyUser middleware in a route
-app.get('/profilName', verifyUser(), (req, res) => {
-    res.json({ Status: "Success", name: req.name });
-});
-
 // Logout route
 app.get('/logout', (req, res) => {
     res.clearCookie('token');
     return res.json({ Status: "Success" });
 });
+
+
+
+// Example of using the verifyUser middleware in a route
+app.get('/profilName', verifyUser(), (req, res) => {
+    res.json({ Status: "Success", name: req.name, matricule: req.matricule });
+});
+
+
+// API Endpoint to get leave history by matricul
+app.get('/history/:matricule', (req, res) => {
+    const matricul = req.params.matricule;
+  
+    const query = 'SELECT * FROM historique WHERE matricul = ?'; // Adjust table name as needed
+    db.query(query, [matricul], (err, results) => {
+      if (err) {
+        console.error('Error fetching leave history:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      
+      // Return results in the response
+      res.json(results);
+    });
+  });
 
 // Start the server
 app.listen(5000, () => console.log("app is running on port 5000"));
